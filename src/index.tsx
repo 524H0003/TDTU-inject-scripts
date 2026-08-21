@@ -1,0 +1,12 @@
+import "@/styles/globals.css";
+import "@/styles/tailwind.css";
+import React from "react";
+import { createRoot } from "react-dom/client";
+
+import PopupPage from "./popup";
+
+const container = document.getElementById("root");
+if (container) {
+  const root = createRoot(container);
+  root.render(<PopupPage />);
+}

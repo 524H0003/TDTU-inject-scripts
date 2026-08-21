@@ -1,0 +1,10 @@
+.pnpm-store/
+node_modules/
+dist/
+reports/
+src/styles/tailwind.css
+.env
+release.zip
+update/*
+scripts/cve/*
+!scripts/cve/*.bat
