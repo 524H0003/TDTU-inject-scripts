@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "./dist/popup.html",
     "default_icon": "public/icon.png"
   },
   "permissions": ["storage", "scripting", "alarms", "tabs"],

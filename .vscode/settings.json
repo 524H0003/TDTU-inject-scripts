@@ -11,7 +11,6 @@
     "**/.hg": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "**/dist": true,
     "**/node_modules": true,
     "**/pnpm-lock.yaml": true,
     ".pnpm-store": true,
@@ -24,11 +23,8 @@
     "**/release": true,
     "update": true
   },
-  "svg.preview.background": "transparent",
-  "explorerExclude.backup": {},
   "editor.rulers": [80],
   "editor.wordWrap": "on",
-  "typescript.tsserver.log": "verbose",
   "editor.foldingImportsByDefault": true,
   "explorerExcludeManager.backup": {}
 }

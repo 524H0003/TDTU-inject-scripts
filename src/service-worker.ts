@@ -16,7 +16,10 @@ async function executeScript(tab: chrome.tabs.Tab) {
       target: { tabId: tab.id },
       world: "MAIN",
       func: () => {
-        if (window.__scriptInjected && window.__lastInjectedUrl === window.location.href) {
+        if (
+          window.__scriptInjected &&
+          window.__lastInjectedUrl === window.location.href
+        ) {
           return true;
         }
         window.__scriptInjected = true;
@@ -28,6 +31,15 @@ async function executeScript(tab: chrome.tabs.Tab) {
     const isAlreadyInjected = checkResult[0]?.result;
     if (isAlreadyInjected) {
       return;
+    }
+
+    let cssText = "";
+    try {
+      const cssUrl = chrome.runtime.getURL("./dist/index.css");
+      const response = await fetch(cssUrl);
+      cssText = await response.text();
+    } catch (err) {
+      console.error("Lỗi khi tải CSS\n", err);
     }
 
     await chrome.scripting
@@ -46,9 +58,10 @@ async function executeScript(tab: chrome.tabs.Tab) {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: "MAIN",
-      func: () => {
+      args: [cssText],
+      func: (css) => {
         if (typeof window.executeInjectScript === "function") {
-          window.executeInjectScript();
+          window.executeInjectScript(css);
         }
       },
     });

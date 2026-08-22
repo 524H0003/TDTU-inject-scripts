@@ -17,5 +17,16 @@ export interface IExecute {
 export async function execute({ func }: IExecute) {
   if (typeof window === "undefined") return;
 
-  window.executeInjectScript = func;
+  window.executeInjectScript = (cssContent?: string) => {
+    if (cssContent) {
+      const cssId = "extension-tailwind-css";
+      if (!document.getElementById(cssId)) {
+        const style = document.createElement("style");
+        style.id = cssId;
+        style.textContent = cssContent;
+        document.head.appendChild(style);
+      }
+    }
+    func();
+  };
 }
