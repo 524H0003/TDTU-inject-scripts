@@ -7,13 +7,33 @@ console.log = function (...args) {
 };
 
 async function executeScript(tab: chrome.tabs.Tab) {
-  const target = tab.url!.split(".")[0]!.split("/").at(-1);
+  if (!tab.id || !tab.url) return;
+  const target = tab.url.split(".")[0]!.split("/").at(-1);
 
   try {
+    // Check if script is already injected for the current URL to prevent duplicate executions
+    const checkResult = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: "MAIN",
+      func: () => {
+        if (window.__scriptInjected && window.__lastInjectedUrl === window.location.href) {
+          return true;
+        }
+        window.__scriptInjected = true;
+        window.__lastInjectedUrl = window.location.href;
+        return false;
+      },
+    });
+
+    const isAlreadyInjected = checkResult[0]?.result;
+    if (isAlreadyInjected) {
+      return;
+    }
+
     await chrome.scripting
       .executeScript({
         world: "MAIN",
-        target: { tabId: tab.id! },
+        target: { tabId: tab.id },
         files: ["./dist/context/" + target + ".js"],
       })
       .then(() => {
@@ -24,7 +44,7 @@ async function executeScript(tab: chrome.tabs.Tab) {
       });
 
     await chrome.scripting.executeScript({
-      target: { tabId: tab.id! },
+      target: { tabId: tab.id },
       world: "MAIN",
       func: () => {
         if (typeof window.executeInjectScript === "function") {
@@ -38,10 +58,16 @@ async function executeScript(tab: chrome.tabs.Tab) {
 }
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (changeInfo.status !== "complete" || !tab.url || !TDTURegex.test(tab.url))
-    return;
+  if (!tab.url || !TDTURegex.test(tab.url)) return;
 
-  executeScript(tab);
+  // Trigger on loading, complete, or when URL changes (SPA transitions)
+  if (
+    changeInfo.status === "loading" ||
+    changeInfo.status === "complete" ||
+    changeInfo.url
+  ) {
+    executeScript(tab);
+  }
 });
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
