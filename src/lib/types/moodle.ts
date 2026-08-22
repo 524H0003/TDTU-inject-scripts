@@ -39,3 +39,27 @@ export interface MoodleCoursesResponse {
     nextoffset: number;
   };
 }
+
+export interface CourseContentModule {
+  name: string;
+  modname: string;
+  instance: number;
+  viewurl: string;
+  availablefrom?: number;
+  availableuntil?: number;
+  lockdownoptions?: any[];
+  visible?: boolean;
+  stealth?: boolean;
+  deletable?: boolean;
+  courseid?: number;
+  sectionnumber?: number;
+  subsectionnumber?: number;
+  completion?: number;
+}
+
+export interface CourseSection {
+  sectionnumber: number;
+  name: string;
+  summary: string;
+  modules?: CourseContentModule[];
+}

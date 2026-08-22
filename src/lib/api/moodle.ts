@@ -1,4 +1,4 @@
-import { MoodleCourse } from "../types/moodle";
+import { CourseSection, MoodleCourse } from "../types/moodle";
 
 interface ApiResponse {
   error: false;
@@ -15,6 +15,19 @@ interface FetchCoursesParams {
   sort?: string;
 }
 
+export function getSessionKey(): string {
+  // Try to get sesskey from Moodle global variable
+  // @ts-expect-error force value
+  if (typeof M !== "undefined" && M.cfg && M.cfg.sesskey) {
+    // @ts-expect-error force value
+    return M.cfg.sesskey;
+  }
+
+  console.error("Not found session key");
+
+  return "";
+}
+
 export async function fetchMoodleCourses({
   offset = 0,
   limit = 50,
@@ -22,8 +35,7 @@ export async function fetchMoodleCourses({
   sort = "fullname",
 }: FetchCoursesParams = {}): Promise<MoodleCourse[]> {
   const baseUrl = "https://elearning.tdtu.edu.vn";
-  // @ts-expect-error force value
-  const sesskey = M.cfg.sesskey;
+  const sesskey = getSessionKey();
   const info = "core_course_get_enrolled_courses_by_timeline_classification";
 
   const payload = [
@@ -65,46 +77,148 @@ export async function fetchMoodleCourses({
   }
 }
 
-export function formatDate(timestamp: number): Date {
-  return new Date(timestamp * 1000);
-}
+export async function fetchCourseSections(
+  courseId: number,
+): Promise<CourseSection[]> {
+  const baseUrl = "https://elearning.tdtu.edu.vn";
+  try {
+    const response = await fetch(`${baseUrl}/course/view.php?id=${courseId}`);
+    if (!response.ok) throw new Error("Failed to load course page");
 
-export function formatStartDate(timestamp: number): string {
-  return formatDate(timestamp).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
 
-export function formatEndDate(timestamp: number): string {
-  return formatDate(timestamp).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+    const sectionElements = Array.from(doc.querySelectorAll("li.section.main"));
+    const sections = await Promise.all(
+      sectionElements.map(async (sectionEl, index) => {
+        const sectionName =
+          sectionEl.querySelector(".sectionname")?.textContent?.trim() ||
+          `Section ${index}`;
 
-export function getCourseStatus(course: any): "started" | "upcoming" | "ended" {
-  const now = new Date().getTime() / 1000;
-  const startDate = course.startdate;
-  const endDate = course.enddate;
+        const sectionIdMatch = sectionEl.id.match(/section-(\d+)/);
+        const sectionNumber = sectionIdMatch
+          ? parseInt(sectionIdMatch[1])
+          : index;
 
-  if (now < startDate) {
-    return "upcoming";
-  } else if (now > endDate) {
-    return "ended";
-  } else {
-    return "started";
+        const moduleElements = Array.from(
+          sectionEl.querySelectorAll("li.activity"),
+        );
+        const modules = await Promise.all(
+          moduleElements.map(async (modEl) => {
+            const idMatch = modEl.id.match(/module-(\d+)/);
+            const moduleId = idMatch ? parseInt(idMatch[1]) : 0;
+            const name =
+              modEl
+                .querySelector(".instancename")
+                ?.textContent?.replace(/Assignment|URL|Page|Forum/g, "")
+                .trim() || "Unknown";
+            const link = modEl.querySelector("a")?.getAttribute("href") || "";
+            const isAssign = modEl.classList.contains("modtype_assign");
+            const isQuiz = modEl.classList.contains("modtype_quiz");
+            const isUrlOrResource =
+              modEl.classList.contains("modtype_url") ||
+              modEl.classList.contains("modtype_page") ||
+              modEl.classList.contains("modtype_resource") ||
+              modEl.classList.contains("modtype_folder") ||
+              modEl.classList.contains("modtype_label") ||
+              modEl.classList.contains("modtype_book");
+
+            const modName = isAssign
+              ? "assign"
+              : isQuiz
+                ? "quiz"
+                : isUrlOrResource
+                  ? "url"
+                  : "other";
+
+            let dueDate: number | undefined;
+            let isSubmitted = false;
+            if (modName === "assign" && link) {
+              const details = await fetchAssignmentDetails(link);
+              dueDate = details.dueDate;
+              isSubmitted = details.isSubmitted || false;
+            }
+
+            const completionImg =
+              modEl
+                .querySelector<HTMLImageElement>("img.icon")
+                ?.title.includes("Completed") || false;
+            const isCompleted = isSubmitted || completionImg;
+
+            const completion = isCompleted ? 100 : 0;
+
+            return {
+              id: moduleId,
+              instance: moduleId,
+              name,
+              viewurl: link,
+              modname: modName,
+              completion,
+              availableuntil: dueDate,
+              sectionNumber,
+            };
+          }),
+        );
+
+        return {
+          sectionnumber: sectionNumber,
+          name: sectionName,
+          summary: "",
+          modules,
+        };
+      }),
+    );
+
+    return sections;
+  } catch (error) {
+    console.error("Error scraping course sections:", error);
+    return [];
   }
 }
 
-export function formatProgress(progress: number): string {
-  if (progress === 0) {
-    return "Chưa bắt đầu";
-  } else if (progress === 100) {
-    return "Hoàn thành";
-  } else {
-    return `${progress}%`;
+export async function fetchAssignmentDetails(
+  url: string,
+): Promise<{ dueDate?: number; isSubmitted?: boolean }> {
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/html");
+
+    let dueDate: number | undefined;
+    let isSubmitted = false;
+
+    const rows = doc.querySelectorAll(".submissionstatustable tr");
+    for (const row of rows) {
+      const th = row.querySelector("th")?.textContent?.trim();
+      const td = row.querySelector("td")?.textContent?.trim();
+
+      if (th === "Due date" && td && td !== "-") {
+        const date = new Date(td);
+        if (!isNaN(date.getTime())) {
+          dueDate = date.getTime() / 1000;
+        }
+      }
+
+      if (th === "Submission status" && td) {
+        if (
+          td.toLowerCase().includes("submitted") &&
+          !td.toLowerCase().includes("not submitted")
+        ) {
+          isSubmitted = true;
+        }
+      }
+    }
+
+    const statusEl = doc.querySelector(".submissionstatussubmitted");
+    if (statusEl) {
+      isSubmitted = true;
+    }
+
+    return { dueDate, isSubmitted };
+  } catch (error) {
+    console.error("Failed to fetch assignment details:", error);
   }
+  return {};
 }
