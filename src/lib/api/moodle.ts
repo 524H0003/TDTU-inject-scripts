@@ -124,6 +124,8 @@ export async function fetchCourseSections(
               modEl.classList.contains("modtype_label") ||
               modEl.classList.contains("modtype_book");
 
+            if (modEl.classList.contains("modtype_forum")) return undefined;
+
             const modName = isAssign
               ? "assign"
               : isQuiz
@@ -165,7 +167,7 @@ export async function fetchCourseSections(
           sectionnumber: sectionNumber,
           name: sectionName,
           summary: "",
-          modules,
+          modules: modules.filter((i) => i !== undefined),
         };
       }),
     );
