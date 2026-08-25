@@ -5,10 +5,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/ui/dialog";
-import { Input } from "@/components/shadcn/ui/input";
 import { Label } from "@/components/shadcn/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/ui/popover";
+import { format } from "date-fns";
 import { Clock } from "lucide-react";
+import * as React from "react";
 
+import { CalendarWithTime } from "./CalendarWithTime";
 import { AllCourseTask } from "./types";
 
 interface DeadlineModalProps {
@@ -32,6 +39,11 @@ export function DeadlineModal({
   onClearDeadline,
   hasCustomDeadline,
 }: DeadlineModalProps) {
+  const calendarValue = React.useMemo(
+    () => (selectedDeadline ? new Date(selectedDeadline) : undefined),
+    [selectedDeadline],
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -40,16 +52,40 @@ export function DeadlineModal({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="deadline-date" className="text-sm font-medium">
+            <Label className="text-sm font-medium">
               Chọn ngày giờ hạn chót
             </Label>
-            <Input
-              id="deadline-date"
-              type="datetime-local"
-              value={selectedDeadline}
-              onChange={(e) => onSetDeadline(e.target.value)}
-              className="w-full"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                  suppressHydrationWarning
+                >
+                  {calendarValue ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4" />
+                      {format(calendarValue, "dd/MM/yyyy 'tại' HH:mm")}
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 opacity-50" />
+                      <span>Chọn ngày giờ hạn chót</span>
+                    </>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarWithTime
+                  date={calendarValue}
+                  onDateChange={(date) => {
+                    if (date) {
+                      onSetDeadline(date.toISOString());
+                    }
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex justify-end gap-2">
             {hasCustomDeadline && !selectedTask?.availableuntil && (
