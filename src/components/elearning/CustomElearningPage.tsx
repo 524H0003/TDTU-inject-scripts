@@ -20,7 +20,11 @@ import {
   setCustomDeadline,
 } from "./utils";
 
-export function CustomElearningPage() {
+export function CustomElearningPage({
+  shadowRoot,
+}: {
+  shadowRoot: ShadowRoot;
+}) {
   const [allTasks, setAllTasks] = useState<AllCourseTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFinished, setShowFinished] = useState(false);
@@ -242,6 +246,7 @@ export function CustomElearningPage() {
             tasks={filteredTasks}
             onSetDeadline={handleSetDeadline}
             onClearDeadline={handleClearDeadline}
+            showStatusColumn={showFinished}
           />
         )}
       </div>
@@ -260,6 +265,7 @@ export function CustomElearningPage() {
             ? Boolean(customDeadlines[getTaskId(selectedTask)])
             : false
         }
+        shadowRoot={shadowRoot}
       />
       <ClearAllDeadlinesDialog
         open={showClearAllDialog}

@@ -16,21 +16,25 @@ interface TaskTableProps {
   })[];
   onSetDeadline: (task: AllCourseTask) => void;
   onClearDeadline: (task: AllCourseTask) => void;
+  showStatusColumn?: boolean;
 }
 
 export function TaskTable({
   tasks,
   onSetDeadline,
   onClearDeadline,
+  showStatusColumn = true,
 }: TaskTableProps) {
   return (
     <div className="border-border overflow-x-auto rounded-lg border">
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
-            <TableHead className="px-4 py-3 font-semibold">
-              Trạng thái
-            </TableHead>
+            {showStatusColumn && (
+              <TableHead className="px-4 py-3 font-semibold">
+                Trạng thái
+              </TableHead>
+            )}
             <TableHead className="px-4 py-3 font-semibold">
               Tên bài tập
             </TableHead>
@@ -44,6 +48,7 @@ export function TaskTable({
         <TableBody>
           {tasks.map((task) => (
             <TaskRow
+              showStatusColumn={showStatusColumn}
               key={`${task.courseId}-${task.instance}-${task.modname}`}
               task={task}
               onSetDeadline={onSetDeadline}

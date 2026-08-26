@@ -12,12 +12,14 @@ interface TaskRowProps {
   };
   onSetDeadline: (task: AllCourseTask) => void;
   onClearDeadline: (task: AllCourseTask) => void;
+  showStatusColumn?: boolean;
 }
 
 export function TaskRow({
   task,
   onSetDeadline,
   onClearDeadline,
+  showStatusColumn = true,
 }: TaskRowProps) {
   const isFinished = isTaskFinished(task);
   const effectiveDueTimestamp = task.effectiveDueTimestamp;
@@ -42,24 +44,26 @@ export function TaskRow({
 
   return (
     <TableRow>
-      <TableCell className="px-4 py-3 whitespace-nowrap">
-        {isFinished ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Đã xong
-          </span>
-        ) : isOverdue ? (
-          <span className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            <Clock className="h-3.5 w-3.5" />
-            Quá hạn
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-            <Clock className="h-3.5 w-3.5" />
-            Chưa làm
-          </span>
-        )}
-      </TableCell>
+      {showStatusColumn && (
+        <TableCell className="px-4 py-3 whitespace-nowrap">
+          {isFinished ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Đã xong
+            </span>
+          ) : isOverdue ? (
+            <span className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+              <Clock className="h-3.5 w-3.5" />
+              Quá hạn
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <Clock className="h-3.5 w-3.5" />
+              Chưa làm
+            </span>
+          )}
+        </TableCell>
+      )}
       <TableCell className="text-foreground max-w-xs truncate px-4 py-3 font-medium">
         {task.name}
       </TableCell>
@@ -77,8 +81,7 @@ export function TaskRow({
           }}
           title="Mở khóa học"
         >
-          <BookOpen className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{task.courseName}</span>
+          <span className="truncate">{task.courseName.split("_")[3]}</span>
         </button>
       </TableCell>
       <TableCell className="px-4 py-3 text-xs whitespace-nowrap">

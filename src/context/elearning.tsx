@@ -36,17 +36,11 @@ execute({
           }
 
           // Check if custom page div already exists, if not create it
-          let customPage = document.getElementById(customPageId);
+          let customPage = document.getElementById(customPageId)!;
           if (!customPage) {
-            if (originalPage) {
-              customPage = originalPage.cloneNode(false) as HTMLElement;
-              customPage.id = customPageId;
-              customPage.style.display = "block";
-            } else {
-              customPage = document.createElement("div");
-              customPage.id = customPageId;
-              customPage.className = "container-fluid";
-            }
+            customPage = document.createElement("div");
+            customPage.id = customPageId;
+            customPage.className = "container-fluid";
 
             customPage.style.marginTop = "40px";
             customPage.style.padding = "2rem";
@@ -60,9 +54,22 @@ execute({
               document.body.appendChild(customPage);
             }
 
-            // Create React root and render our component inside customPage
-            const root = createRoot(customPage);
-            root.render(<CustomElearningPage />);
+            // Create Shadow DOM for CSS isolation
+            const shadowRoot = customPage.attachShadow({ mode: "open" });
+
+            // Inject CSS directly into Shadow DOM (Shadow DOM naturally isolates by default)
+            const injectedCss = document.getElementById(
+              "extension-tailwind-css",
+            );
+            if (injectedCss) {
+              const shadowStyle = document.createElement("style");
+              shadowStyle.textContent = injectedCss.textContent || "";
+              shadowRoot.appendChild(shadowStyle);
+            }
+
+            // Create React root and render our component inside Shadow DOM
+            const root = createRoot(shadowRoot);
+            root.render(<CustomElearningPage shadowRoot={shadowRoot} />);
           } else {
             customPage.style.display = "block";
           }

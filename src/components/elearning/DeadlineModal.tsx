@@ -27,6 +27,7 @@ interface DeadlineModalProps {
   onSaveDeadline: () => void;
   onClearDeadline: () => void;
   hasCustomDeadline: boolean;
+  shadowRoot?: ShadowRoot;
 }
 
 export function DeadlineModal({
@@ -38,6 +39,7 @@ export function DeadlineModal({
   onSaveDeadline,
   onClearDeadline,
   hasCustomDeadline,
+  shadowRoot,
 }: DeadlineModalProps) {
   const calendarValue = React.useMemo(
     () => (selectedDeadline ? new Date(selectedDeadline) : undefined),
@@ -46,7 +48,7 @@ export function DeadlineModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" container={shadowRoot}>
         <DialogHeader>
           <DialogTitle>Đặt hạn chót tùy chỉnh</DialogTitle>
         </DialogHeader>
@@ -75,7 +77,11 @@ export function DeadlineModal({
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+                container={shadowRoot}
+              >
                 <CalendarWithTime
                   date={calendarValue}
                   onDateChange={(date) => {
