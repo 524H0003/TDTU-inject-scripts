@@ -32,6 +32,13 @@ export function TaskRow({
     : null;
   const isOverdue = dueDate ? dueDate < new Date() : false;
 
+  // Calculate days remaining for pending, non-overdue tasks
+  const daysRemaining = dueDate
+    ? Math.ceil(
+        (dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+      )
+    : null;
+
   const dueText = dueDate
     ? dueDate.toLocaleString("vi-VN", {
         day: "2-digit",
@@ -43,7 +50,19 @@ export function TaskRow({
     : "Không có hạn chót";
 
   return (
-    <TableRow>
+    <TableRow
+      className={
+        isFinished
+          ? "bg-emerald-500/50"
+          : isOverdue && !isFinished
+            ? "bg-destructive/50"
+            : daysRemaining !== null && !isFinished && daysRemaining <= 5
+              ? "bg-orange-500/50"
+              : daysRemaining !== null && !isFinished && daysRemaining <= 14
+                ? "bg-yellow-500/50"
+                : "hover:bg-muted"
+      }
+    >
       {showStatusColumn && (
         <TableCell className="px-4 py-3 whitespace-nowrap">
           {isFinished ? (
